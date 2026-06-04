@@ -97,7 +97,14 @@ fun calculateInSampleSize(imageSize: Size, width: Int, height: Int): Int {
     if (imageSize.width > width || imageSize.height > height) {
         val heightRatio = (imageSize.height.toFloat() / height.toFloat()).toInt()
         val widthRatio = (imageSize.width.toFloat() / width.toFloat()).toInt()
-        return (if (heightRatio < widthRatio) heightRatio else widthRatio).coerceAtLeast(1)
+        // Use max ratio to ensure the image is downsampled enough to fit both dimensions
+        val ratio = (if (heightRatio > widthRatio) heightRatio else widthRatio).coerceAtLeast(1)
+        // Round to nearest power of 2 as required by BitmapFactory.inSampleSize
+        var powerOf2 = 1
+        while (powerOf2 * 2 <= ratio) {
+            powerOf2 *= 2
+        }
+        return powerOf2.coerceAtLeast(1)
     }
     else { return 1 }
 }
@@ -297,8 +304,15 @@ fun stretchBitmap(source: Bitmap, width: Int, height: Int): Bitmap {
  */
 fun darkenBitmap(source: Bitmap, brightnessToRetainPercent: Int): Bitmap {
     if (!source.isMutable) {
-        Log.w("WallpaperUtil", "darkenBitmap received an immutable bitmap. Returning a copy.")
+        Log.w("WallpaperUtil", "darkenBitmap received an immutable bitmap. Creating a mutable copy.")
         val mutableCopy = source.copy(source.config ?: Bitmap.Config.ARGB_8888, true)
+            ?: return source // If copy fails, return original
+        if (!mutableCopy.isMutable) {
+            // copy() returned immutable, draw onto a new bitmap instead
+            val newBitmap = createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)
+            Canvas(newBitmap).drawBitmap(source, 0f, 0f, null)
+            return darkenBitmap(newBitmap, brightnessToRetainPercent)
+        }
         return darkenBitmap(mutableCopy, brightnessToRetainPercent)
     }
 
@@ -322,6 +336,13 @@ fun darkenBitmap(source: Bitmap, brightnessToRetainPercent: Int): Bitmap {
 fun blurBitmap(source: Bitmap, percent: Int): Bitmap {
     val clampedPercent = percent.coerceIn(0, 100)
     if (clampedPercent == 0) {
+        return source
+    }
+
+    // blurBitmap requires API 31+ (RenderEffect, HardwareRenderer with RenderNode)
+    // Fall back to source on older devices
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+        Log.w("WallpaperUtil", "blurBitmap requires API 31+, current API: ${Build.VERSION.SDK_INT}. Skipping blur.")
         return source
     }
 
@@ -386,8 +407,14 @@ fun blurBitmap(source: Bitmap, percent: Int): Bitmap {
 fun vignetteBitmap(source: Bitmap, percent: Int): Bitmap {
     if (percent <= 0) return source
     if (!source.isMutable) {
-        Log.w("WallpaperUtil", "vignetteBitmap received an immutable bitmap. Returning a copy.")
+        Log.w("WallpaperUtil", "vignetteBitmap received an immutable bitmap. Creating a mutable copy.")
         val mutableCopy = source.copy(source.config ?: Bitmap.Config.ARGB_8888, true)
+            ?: return source
+        if (!mutableCopy.isMutable) {
+            val newBitmap = createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)
+            Canvas(newBitmap).drawBitmap(source, 0f, 0f, null)
+            return vignetteBitmap(newBitmap, percent)
+        }
         return vignetteBitmap(mutableCopy, percent)
     }
 
@@ -426,8 +453,14 @@ fun vignetteBitmap(source: Bitmap, percent: Int): Bitmap {
 fun grayBitmap(bitmap: Bitmap, percent: Int): Bitmap {
     if (percent <= 0) return bitmap
     if (!bitmap.isMutable) {
-        Log.w("WallpaperUtil", "grayBitmap received an immutable bitmap. Returning a copy.")
+        Log.w("WallpaperUtil", "grayBitmap received an immutable bitmap. Creating a mutable copy.")
         val mutableCopy = bitmap.copy(bitmap.config ?: Bitmap.Config.ARGB_8888, true)
+            ?: return bitmap
+        if (!mutableCopy.isMutable) {
+            val newBitmap = createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
+            Canvas(newBitmap).drawBitmap(bitmap, 0f, 0f, null)
+            return grayBitmap(newBitmap, percent)
+        }
         return grayBitmap(mutableCopy, percent)
     }
 

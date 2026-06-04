@@ -30,10 +30,15 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.cancel
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class HomeWallpaperService: Service() {
+    companion object {
+        private const val NOTIFICATION_ID = 1
+    }
+    private val serviceScope = CoroutineScope(Dispatchers.Default)
     private val handleThread = HandlerThread("HomeThread")
     private lateinit var workerHandler: Handler
     @Inject lateinit var albumRepository: AlbumRepository
@@ -58,7 +63,7 @@ class HomeWallpaperService: Service() {
         workerHandler = Handler(handleThread.looper)
         if (!isForeground) {
             val notification = createInitialNotification()
-            startForeground(1, notification)
+            startForeground(NOTIFICATION_ID, notification)
             isForeground = true
         }
     }
@@ -82,12 +87,13 @@ class HomeWallpaperService: Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        serviceScope.cancel()
         workerHandler.removeCallbacksAndMessages(null)
         handleThread.quitSafely()
     }
 
     private fun workerTaskStart() {
-        CoroutineScope(Dispatchers.Default).launch {
+        serviceScope.launch(Dispatchers.Default) {
             delay(50)
             changeWallpaper(this@HomeWallpaperService)
             withContext(Dispatchers.Main) {
@@ -97,7 +103,7 @@ class HomeWallpaperService: Service() {
     }
 
     private fun workerTaskUpdate() {
-        CoroutineScope(Dispatchers.Default).launch {
+        serviceScope.launch(Dispatchers.Default) {
             updateCurrentWallpaper(this@HomeWallpaperService)
             withContext(Dispatchers.Main) {
                 stopSelf()
@@ -106,7 +112,7 @@ class HomeWallpaperService: Service() {
     }
 
     private fun workerTaskRefresh() {
-        CoroutineScope(Dispatchers.Default).launch {
+        serviceScope.launch(Dispatchers.Default) {
             refreshAlbum(this@HomeWallpaperService)
             withContext(Dispatchers.Main) {
                 stopSelf()
@@ -565,7 +571,7 @@ class HomeWallpaperService: Service() {
     }
 
     private fun refreshAlbum(context: Context) {
-        CoroutineScope(Dispatchers.IO).launch {
+        serviceScope.launch(Dispatchers.IO) {
             Log.d("AutoWallpaperChangerPro", "Refreshing albums")
             try {
                 val albumsToRefresh = albumRepository.getAlbumsWithWallpaperAndFolder().first()

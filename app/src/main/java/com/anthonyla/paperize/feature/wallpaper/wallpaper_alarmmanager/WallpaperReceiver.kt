@@ -75,6 +75,16 @@ class WallpaperReceiver : BroadcastReceiver() {
                         val homeNext = settingsDataStore.getString(SettingsConstants.HOME_NEXT_SET_TIME)
                         val lockNext = settingsDataStore.getString(SettingsConstants.LOCK_NEXT_SET_TIME)
 
+                        val alarmItem = WallpaperAlarmItem(
+                            homeInterval = homeInterval,
+                            lockInterval = lockInterval,
+                            scheduleSeparately = scheduleSeparately,
+                            setHome = setHome,
+                            setLock = setLock,
+                            changeStartTime = changeStartTime,
+                            startTime = Pair(startTime[0], startTime[1]),
+                            shuffle = shuffle
+                        )
                         val scheduler = WallpaperAlarmSchedulerImpl(context, settingsDataStore)
                         scheduler.scheduleWallpaperAlarm(
                             wallpaperAlarmItem = alarmItem,

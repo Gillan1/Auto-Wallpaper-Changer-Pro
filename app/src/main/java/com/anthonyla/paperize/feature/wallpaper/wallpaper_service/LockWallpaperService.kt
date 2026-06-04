@@ -29,11 +29,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.cancel
 import java.io.IOException
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class LockWallpaperService: Service() {
+    companion object {
+        private const val NOTIFICATION_ID = 2
+    }
+    private val serviceScope = CoroutineScope(Dispatchers.Default)
     private val handleThread = HandlerThread("LockThread")
     private lateinit var workerHandler: Handler
     @Inject lateinit var albumRepository: AlbumRepository
@@ -57,7 +62,7 @@ class LockWallpaperService: Service() {
         workerHandler = Handler(handleThread.looper)
         if (!isForeground) {
             val notification = createInitialNotification()
-            startForeground(1, notification)
+            startForeground(NOTIFICATION_ID, notification)
             isForeground = true
         }
     }
@@ -80,12 +85,13 @@ class LockWallpaperService: Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        serviceScope.cancel()
         workerHandler.removeCallbacksAndMessages(null)
         handleThread.quitSafely()
     }
 
     private fun workerTaskStart() {
-        CoroutineScope(Dispatchers.Default).launch {
+        serviceScope.launch(Dispatchers.Default) {
             changeWallpaper(this@LockWallpaperService)
             withContext(Dispatchers.Main) {
                 stopSelf()
@@ -94,7 +100,7 @@ class LockWallpaperService: Service() {
     }
 
     private fun workerTaskUpdate() {
-        CoroutineScope(Dispatchers.Default).launch {
+        serviceScope.launch(Dispatchers.Default) {
             updateCurrentWallpaper(this@LockWallpaperService)
             withContext(Dispatchers.Main) {
                 stopSelf()

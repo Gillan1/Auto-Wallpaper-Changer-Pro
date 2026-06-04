@@ -227,13 +227,27 @@ class AlbumScreenViewModel @Inject constructor(
                     val selectedWallpapers = _state.value.selectionState.selectedWallpapers
                     val foldersToDelete = album.folders.filter { selectedFolders.contains(it.folderUri) }
                     val wallpapersToDelete = album.wallpapers.filter { selectedWallpapers.contains(it.wallpaperUri) }
+
+                    // BUG FIX: Also collect wallpapers inside deleted folders for cleanup
+                    val folderWallpapersToDelete = foldersToDelete.flatMap { it.wallpapers }
+
+                    // Collect all deleted URIs for queue cleanup
+                    val deletedUris = (foldersToDelete.map { it.folderUri } +
+                            wallpapersToDelete.map { it.wallpaperUri } +
+                            folderWallpapersToDelete.map { it.wallpaperUri }).toSet()
+
                     if (foldersToDelete.size + wallpapersToDelete.size == album.folders.size + album.wallpapers.size) {
                         repository.cascadeDeleteAlbum(album.album)
                     }
                     else {
                         repository.deleteFolderList(foldersToDelete)
                         repository.deleteWallpaperList(wallpapersToDelete)
-                        if (album.album.coverUri in (foldersToDelete.map { it.folderUri } + wallpapersToDelete.map { it.wallpaperUri })) {
+                        // BUG FIX: Also delete wallpapers that were inside the deleted folders
+                        if (folderWallpapersToDelete.isNotEmpty()) {
+                            repository.deleteWallpaperList(folderWallpapersToDelete)
+                        }
+
+                        if (album.album.coverUri in deletedUris) {
                             val newCover = album.folders.minus(foldersToDelete.toSet()).firstOrNull()?.coverUri ?: album.wallpapers.minus(wallpapersToDelete.toSet()
                             ).firstOrNull()?.wallpaperUri ?: ""
                             repository.updateAlbum(album.album.copy(coverUri = newCover))
@@ -257,8 +271,16 @@ class AlbumScreenViewModel @Inject constructor(
                             )
                         }
 
+                        // BUG FIX: Prune deleted URIs from home/lock queues
+                        val updatedHomeQueue = album.album.homeWallpapersInQueue.filterNot { it in deletedUris }
+                        val updatedLockQueue = album.album.lockWallpapersInQueue.filterNot { it in deletedUris }
+
                         repository.upsertAlbumWithWallpaperAndFolder(
                             album.copy(
+                                album = album.album.copy(
+                                    homeWallpapersInQueue = updatedHomeQueue,
+                                    lockWallpapersInQueue = updatedLockQueue
+                                ),
                                 folders = newFolders,
                                 wallpapers = newWallpapers
                             )

@@ -8,6 +8,7 @@ import com.anthonyla.paperize.feature.wallpaper.presentation.sort_view_screen.So
 import com.anthonyla.paperize.feature.wallpaper.presentation.sort_view_screen.SortState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
@@ -25,12 +26,10 @@ class FolderViewModel @Inject constructor (): ViewModel() {
     fun onEvent(event: FolderEvent) {
         when (event) {
             is FolderEvent.LoadFolderView -> {
-                _state.value = state.value.copy(
-                    folder = event.folder
-                )
+                _state.update { it.copy(folder = event.folder) }
             }
             is FolderEvent.Reset -> {
-                _state.value = FolderState()
+                _state.update { FolderState() }
             }
         }
     }

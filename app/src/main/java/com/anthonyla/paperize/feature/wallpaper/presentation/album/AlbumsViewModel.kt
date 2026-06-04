@@ -124,7 +124,7 @@ class AlbumsViewModel @Inject constructor (
                 val validFolders = async {
                     album.folders
                         .asSequence()
-                        .filterNot { isDirectory(context, it.folderUri) }
+                        .filter { isDirectory(context, it.folderUri) }
                         .map { folder ->
                             async {
                                 val metadata = getFolderMetadata(folder.folderUri, context)
