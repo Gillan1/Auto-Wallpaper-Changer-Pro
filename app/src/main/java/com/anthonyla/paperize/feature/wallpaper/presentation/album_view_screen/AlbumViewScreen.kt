@@ -19,20 +19,28 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LargeFloatingActionButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.anthonyla.paperize.R
 import com.anthonyla.paperize.feature.wallpaper.domain.model.Folder
 import com.anthonyla.paperize.feature.wallpaper.domain.model.Wallpaper
-import com.anthonyla.paperize.feature.wallpaper.presentation.add_album_screen.components.AddAlbumAnimatedFab
+import com.anthonyla.paperize.feature.wallpaper.presentation.add_album_screen.components.QuickAddBottomSheet
 import com.anthonyla.paperize.feature.wallpaper.presentation.album.components.FolderItem
 import com.anthonyla.paperize.feature.wallpaper.presentation.album.components.WallpaperItem
 import com.anthonyla.paperize.feature.wallpaper.presentation.album_view_screen.components.AlbumViewTopBar
@@ -57,6 +65,7 @@ fun AlbumViewScreen(
     val lazyListState = rememberLazyGridState()
 
     val albumViewState by albumScreenViewModel.state.collectAsStateWithLifecycle()
+    var showAddBottomSheet by remember { mutableStateOf(false) }
 
     val album = remember(albumViewState.albums, albumViewState.initialAlbumName) {
         albumViewState.albums.find { it.album.initialAlbumName == albumViewState.initialAlbumName }
@@ -252,25 +261,21 @@ fun AlbumViewScreen(
             )
         },
         floatingActionButton = {
-            val onImageClickFab = remember(albumScreenViewModel, imagePickerLauncher) {
-                {
-                    albumScreenViewModel.onEvent(AlbumViewEvent.DeselectAll)
-                    imagePickerLauncher.launch(arrayOf("image/*"))
-                }
+            LargeFloatingActionButton(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                onClick = {
+                    if (!albumViewState.isLoading) {
+                        showAddBottomSheet = true
+                    }
+                },
+            ) {
+                Icon(
+                    Icons.Filled.Add,
+                    contentDescription = stringResource(R.string.add_wallpaper),
+                    modifier = Modifier.padding(16.dp),
+                )
             }
-            val onFolderClickFab = remember(albumScreenViewModel, folderPickerLauncher) {
-                {
-                    albumScreenViewModel.onEvent(AlbumViewEvent.DeselectAll)
-                    folderPickerLauncher.launch(null)
-                }
-            }
-
-            AddAlbumAnimatedFab(
-                isLoading = albumViewState.isLoading,
-                animate = animate,
-                onImageClick = onImageClickFab,
-                onFolderClick = onFolderClickFab
-            )
         },
         bottomBar = {
             if (albumViewState.isLoading) {
@@ -278,6 +283,25 @@ fun AlbumViewScreen(
             }
         },
         content = { paddingValues ->
+            if (showAddBottomSheet) {
+                val onImageClickSheet = remember(albumScreenViewModel, imagePickerLauncher) {
+                    {
+                        albumScreenViewModel.onEvent(AlbumViewEvent.DeselectAll)
+                        imagePickerLauncher.launch(arrayOf("image/*"))
+                    }
+                }
+                val onFolderClickSheet = remember(albumScreenViewModel, folderPickerLauncher) {
+                    {
+                        albumScreenViewModel.onEvent(AlbumViewEvent.DeselectAll)
+                        folderPickerLauncher.launch(null)
+                    }
+                }
+                QuickAddBottomSheet(
+                    onDismiss = { showAddBottomSheet = false },
+                    onImageClick = onImageClickSheet,
+                    onFolderClick = onFolderClickSheet
+                )
+            }
             if (album != null) {
                 LazyVerticalGridScrollbar(
                     state = lazyListState,

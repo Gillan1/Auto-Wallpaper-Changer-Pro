@@ -20,6 +20,10 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LargeFloatingActionButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -32,12 +36,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.anthonyla.paperize.R
 import com.anthonyla.paperize.feature.wallpaper.domain.model.Folder
 import com.anthonyla.paperize.feature.wallpaper.domain.model.Wallpaper
-import com.anthonyla.paperize.feature.wallpaper.presentation.add_album_screen.components.AddAlbumAnimatedFab
 import com.anthonyla.paperize.feature.wallpaper.presentation.add_album_screen.components.AddAlbumSmallTopBar
+import com.anthonyla.paperize.feature.wallpaper.presentation.add_album_screen.components.QuickAddBottomSheet
 import com.anthonyla.paperize.feature.wallpaper.presentation.album.components.FolderItem
 import com.anthonyla.paperize.feature.wallpaper.presentation.album.components.WallpaperItem
 import kotlinx.coroutines.Dispatchers
@@ -62,6 +68,7 @@ fun AddAlbumScreen(
     val addAlbumState by addAlbumViewModel.state.collectAsStateWithLifecycle() // Use by for direct access
     val lazyListState = rememberLazyGridState()
     var showSpotlight by rememberSaveable { mutableStateOf(false) }
+    var showAddBottomSheet by rememberSaveable { mutableStateOf(false) }
 
     // Remember scrollbar settings for consistency and performance
     val colorScheme = MaterialTheme.colorScheme
@@ -216,26 +223,21 @@ fun AddAlbumScreen(
             )
         },
         floatingActionButton = {
-            // Remember FAB callbacks
-            val onImageClickFab = remember(addAlbumViewModel, imagePickerLauncher) {
-                {
-                    addAlbumViewModel.onEvent(AddAlbumEvent.DeselectAll)
-                    imagePickerLauncher.launch(arrayOf("image/*"))
-                }
+            LargeFloatingActionButton(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                onClick = {
+                    if (!addAlbumState.isLoading) {
+                        showAddBottomSheet = true
+                    }
+                },
+            ) {
+                Icon(
+                    Icons.Filled.Add,
+                    contentDescription = stringResource(R.string.add_wallpaper),
+                    modifier = Modifier.padding(16.dp),
+                )
             }
-            val onFolderClickFab = remember(addAlbumViewModel, folderPickerLauncher) {
-                {
-                    addAlbumViewModel.onEvent(AddAlbumEvent.DeselectAll)
-                    folderPickerLauncher.launch(null)
-                }
-            }
-
-            AddAlbumAnimatedFab(
-                isLoading = addAlbumState.isLoading,
-                animate = animate,
-                onImageClick = onImageClickFab,
-                onFolderClick = onFolderClickFab
-            )
         },
         bottomBar = {
             if (addAlbumState.isLoading) {
@@ -243,6 +245,25 @@ fun AddAlbumScreen(
             }
         },
         content = { paddingValues -> // Use paddingValues from Scaffold
+            if (showAddBottomSheet) {
+                val onImageClickSheet = remember(addAlbumViewModel, imagePickerLauncher) {
+                    {
+                        addAlbumViewModel.onEvent(AddAlbumEvent.DeselectAll)
+                        imagePickerLauncher.launch(arrayOf("image/*"))
+                    }
+                }
+                val onFolderClickSheet = remember(addAlbumViewModel, folderPickerLauncher) {
+                    {
+                        addAlbumViewModel.onEvent(AddAlbumEvent.DeselectAll)
+                        folderPickerLauncher.launch(null)
+                    }
+                }
+                QuickAddBottomSheet(
+                    onDismiss = { showAddBottomSheet = false },
+                    onImageClick = onImageClickSheet,
+                    onFolderClick = onFolderClickSheet
+                )
+            }
             LazyVerticalGridScrollbar(
                 state = lazyListState,
                 settings = scrollbarSettings, // Use remembered settings
