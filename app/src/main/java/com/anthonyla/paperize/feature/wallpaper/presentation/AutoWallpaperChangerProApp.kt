@@ -529,6 +529,9 @@ fun AutoWallpaperChangerProApp(
                 onSkipNonInteractiveChange = {
                     skipNonInteractive ->
                     settingsViewModel.onEvent(SettingsEvent.SetSkipNonInteractive(skipNonInteractive))
+                },
+                onChangeOnUnlockChange = { changeOnUnlock ->
+                    settingsViewModel.onEvent(SettingsEvent.SetChangeOnUnlock(changeOnUnlock))
                 }
             )
         }

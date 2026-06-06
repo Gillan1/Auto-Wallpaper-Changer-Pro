@@ -156,7 +156,8 @@ class HomeWallpaperService: Service() {
             homeAlbumName = settingsDataStoreImpl.getString(SettingsConstants.HOME_ALBUM_NAME) ?: "",
             shuffle = settingsDataStoreImpl.getBoolean(SettingsConstants.SHUFFLE) ?: true,
             skipLandscape = settingsDataStoreImpl.getBoolean(SettingsConstants.SKIP_LANDSCAPE) ?: false,
-            skipNonInteractive = settingsDataStoreImpl.getBoolean(SettingsConstants.SKIP_NON_INTERACTIVE) ?: false
+            skipNonInteractive = settingsDataStoreImpl.getBoolean(SettingsConstants.SKIP_NON_INTERACTIVE) ?: false,
+            changeOnUnlock = settingsDataStoreImpl.getBoolean(SettingsConstants.CHANGE_ON_UNLOCK) ?: false
         )
     }
 
@@ -506,7 +507,7 @@ class HomeWallpaperService: Service() {
         }
     }
 
-    private fun setWallpaper(
+    private suspend fun setWallpaper(
         context: Context,
         wallpaper: Uri?,
         darken: Boolean,

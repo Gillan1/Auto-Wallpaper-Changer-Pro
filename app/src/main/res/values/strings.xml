@@ -195,4 +195,6 @@
   <string name="changing_wallpaper">Changing wallpaper…</string>
   <string name="skip_landscape_mode">Skip in landscape mode</string>
   <string name="skip_non_interactive_state">Skip in non-interactive state</string>
+  <string name="change_on_unlock">Change on Unlock</string>
+  <string name="change_wallpaper_when_device_unlocked">Change wallpaper when device is unlocked</string>
 </resources>

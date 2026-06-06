@@ -24,7 +24,7 @@ interface WallpaperAlarmScheduler {
     /**
      * Update the wallpaper alarm with new times without changing the wallpaper
      */
-    fun updateWallpaperAlarm(wallpaperAlarmItem: WallpaperAlarmItem, firstLaunch: Boolean = false)
+    suspend fun updateWallpaperAlarm(wallpaperAlarmItem: WallpaperAlarmItem, firstLaunch: Boolean = false)
 
     /**
      * Update the wallpaper without changing the alarm

@@ -49,4 +49,5 @@ object SettingsConstants {
     const val SHUFFLE = "shuffle"
     const val SKIP_LANDSCAPE = "skip_landscape"
     const val SKIP_NON_INTERACTIVE = "skip_non_interactive"
+    const val CHANGE_ON_UNLOCK = "change_on_unlock"
 }

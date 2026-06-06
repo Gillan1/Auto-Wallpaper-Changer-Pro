@@ -326,7 +326,7 @@ class WallpaperAlarmSchedulerImpl @Inject constructor(
         alarmManager.cancel(pendingIntent)
     }
 
-    override fun updateWallpaperAlarm(wallpaperAlarmItem: WallpaperAlarmItem, firstLaunch: Boolean) {
+    override suspend fun updateWallpaperAlarm(wallpaperAlarmItem: WallpaperAlarmItem, firstLaunch: Boolean) {
         cancelWallpaperAlarm()
         try {
             if (wallpaperAlarmItem.scheduleSeparately) {

@@ -110,7 +110,8 @@ class SettingsViewModel @Inject constructor(
         settingsDataStoreImpl.getBooleanFlow(SettingsConstants.SHUFFLE),
         settingsDataStoreImpl.getBooleanFlow(SettingsConstants.REFRESH),
         settingsDataStoreImpl.getBooleanFlow(SettingsConstants.SKIP_LANDSCAPE),
-        settingsDataStoreImpl.getBooleanFlow(SettingsConstants.SKIP_NON_INTERACTIVE)
+        settingsDataStoreImpl.getBooleanFlow(SettingsConstants.SKIP_NON_INTERACTIVE),
+        settingsDataStoreImpl.getBooleanFlow(SettingsConstants.CHANGE_ON_UNLOCK)
     ) { flows ->
         ScheduleSettings(
             scheduleSeparately = flows[0] as Boolean? ?: false,
@@ -124,6 +125,7 @@ class SettingsViewModel @Inject constructor(
             refresh = flows[9] as Boolean? ?: true,
             skipLandscape = flows[10] as Boolean? ?: false,
             skipNonInteractive = flows[11] as Boolean? ?: false,
+            changeOnUnlock = flows[12] as Boolean? ?: false,
         )
     }
 
@@ -564,6 +566,12 @@ class SettingsViewModel @Inject constructor(
                 }
             }
 
+            is SettingsEvent.SetChangeOnUnlock -> {
+                viewModelScope.launch {
+                    settingsDataStoreImpl.putBoolean(SettingsConstants.CHANGE_ON_UNLOCK, event.changeOnUnlock)
+                }
+            }
+
             is SettingsEvent.Reset -> {
                 viewModelScope.launch {
                     val keysToDelete = listOf(
@@ -608,7 +616,8 @@ class SettingsViewModel @Inject constructor(
                         SettingsConstants.SHUFFLE,
                         SettingsConstants.REFRESH,
                         SettingsConstants.SKIP_LANDSCAPE,
-                        SettingsConstants.SKIP_NON_INTERACTIVE
+                        SettingsConstants.SKIP_NON_INTERACTIVE,
+                        SettingsConstants.CHANGE_ON_UNLOCK
                     )
                     settingsDataStoreImpl.clear(keysToDelete)
                 }
